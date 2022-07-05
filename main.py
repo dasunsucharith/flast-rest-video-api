@@ -30,12 +30,13 @@ resource_fields = {
 class Video(Resource):
     @marshal_with(resource_fields)
     def get(self, video_id):
-        result = VideoModel.query.get(id=video_id)
-        return result 
+        return VideoModel.query.filter_by(id=video_id).first()
 
     @marshal_with(resource_fields)
     def put(self, video_id):
         args = video_put_args.parse_args()
+        if result := VideoModel.query.filter_by(id=video_id).first():
+            abort(409, message="Video ID Already Exists!")
         video = VideoModel(id=video_id, name=args['name'], views=args['views'], likes=args['likes'])
         db.session.add(video)
         db.session.commit()
