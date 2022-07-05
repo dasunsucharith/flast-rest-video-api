@@ -17,9 +17,14 @@ class VideoModel(db.Model):
         return f"Video(name = {name}, views = {views}, likes = {likes})"
 
 video_put_args = reqparse.RequestParser()
-video_put_args.add_argument("name", type=str, help="Name of the video")
-video_put_args.add_argument("views", type=int, help="Views of the video")
-video_put_args.add_argument("likes", type=int, help="Likes on the video")
+video_put_args.add_argument("name", type=str, help="Name of the video resuired", required=True)
+video_put_args.add_argument("views", type=int, help="Views of the video", required=True)
+video_put_args.add_argument("likes", type=int, help="Likes on the video", required=True)
+
+video_update_args = reqparse.RequestParser()
+video_update_args.add_argument("name", type=str, help="Name of the video Required")
+video_update_args.add_argument("views", type=int, help="Views of the video")
+video_update_args.add_argument("likes", type=int, help="Likes on the video")
 
 resource_fields = {
     'id' : fields.Integer,
@@ -30,7 +35,10 @@ resource_fields = {
 class Video(Resource):
     @marshal_with(resource_fields)
     def get(self, video_id):
-        return VideoModel.query.filter_by(id=video_id).first()
+        result = VideoModel.query.filter_by(id=video_id).first()
+        if not result:
+            abort(404, message="Could not find a video with that ID!")
+        return result
 
     @marshal_with(resource_fields)
     def put(self, video_id):
@@ -41,6 +49,24 @@ class Video(Resource):
         db.session.add(video)
         db.session.commit()
         return video, 201
+
+    @marshal_with(resource_fields)
+    def patch(self, video_id):
+        args = video_update_args.parse_args()
+        result = VideoModel.query.filter_by(id=video_id).first()
+        if not result:
+            abort(404, message="Video Doesn't Exists! Cannot Update!!")
+
+        if args["name"]:
+            result.name = args["name"]
+        if args["views"]:
+            result.views = args["views"]
+        if args["likes"]:
+            result.likes = args["likes"]
+
+        db.session.commit()
+
+        return result
 
     def delete(self, video_id):
         abort_if_video_id_not_exist(video_id)
